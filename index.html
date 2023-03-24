@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>ToDo List </title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        html,
+        body {
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Todo list</h1>
+
+    <form>
+        <label for="todo">Todo : </label>
+        <input type="text" id="todo" name="todo">
+
+        <label for="description">Description:</label>
+        <input type="text" id="description" name="description">
+
+        <input type="button" value="Add Todo" onclick="addTodo()">
+    </form>
+
+    <h3>Todo's pending</h3>
+    <ul id="todoList"></ul>
+
+    <h3>Todo's Completed</h3>
+    <ul id="tododone"></ul>
+
+    <script>
+        const API_ENDPOINT = "http://localhost:4000/todo";
+
+        async function addTodo() {
+            const todo = document.getElementById("todo").value;
+            const description = document.getElementById("description").value;
+            const isCompleted = false;
+
+            try {
+                const response = await axios.post(API_ENDPOINT + "/add-todo", { todo, description, isCompleted });
+                const data = response.data.newTodoDetail; // ----------newExpenseDetail *******************************
+                console.log(data)
+                // console.log(data.id)
+                const todoList = document.getElementById("todoList");
+                const li = document.createElement("li");
+                li.innerHTML = `<span>${data.todo} - ${data.description}</span><button onclick="completedTodo('${data.id}', '${data.todo}', '${data.description}')">Mark as done</button> <button onclick="deleteTodo('${data.id}')">Delete</button>`;
+                todoList.appendChild(li);
+                document.getElementById("todo").value = "";
+                document.getElementById("description").value = "";
+            } catch (error) {
+                console.log(error);
+            }
+        }
+
+        async function completedTodo( id, todo, description) {
+            try {
+                const todoList = document.getElementById("todoList");
+                const tododoneList = document.getElementById("tododone");
+                const li = document.createElement("li");
+                li.innerHTML = `<span>${todo} - ${description}</span> <button onclick="deleteTodo('${id}')">Delete</button>`;
+                todoList.removeChild(event.target.parentElement);
+                tododoneList.appendChild(li);
+                
+            } catch (error) {
+                console.log(error);
+            }
+            await axios.put(API_ENDPOINT + `/edit-todo/` +`${id}`, { isCompleted: true });
+            // await fetchTodos();
+
+        }
+
+        async function deleteTodo(id) {
+            try {
+                // console.log(id)
+                await axios.delete(API_ENDPOINT + `/delete-todo/` +`${id}`);
+                const todoList = document.getElementById("todoList");
+                const tododoneList = document.getElementById("tododone");
+                todoList.innerHTML = "";
+                tododoneList.innerHTML = "";
+                await fetchTodos();
+            } catch (error) {
+                console.log(error);
+            }
+        }
+
+        async function fetchTodos() {
+            try {
+                const response = await axios.get(API_ENDPOINT + "/get-todo");
+                const data = response.data.allTodos;
+                console.log(data)
+                // console.log(data.id)
+                const todoList = document.getElementById("todoList");
+                const tododoneList = document.getElementById("tododone");
+
+                data.forEach((todo) => {
+                    const li = document.createElement("li");
+                    if(todo.isCompleted == true){
+                        li.innerHTML = `<span>${todo.todo} - ${todo.description}</span> <button onclick="deleteTodo('${todo.id}')">Delete</button>`;
+                        tododoneList.appendChild(li);
+                    }
+                    else{
+                        li.innerHTML = `<span>${todo.todo} - ${todo.description}</span><button onclick="completedTodo('${todo.id}', '${todo.todo}', '${todo.description}')">Mark as completed</button> <button onclick="deleteTodo('${todo.id}')">Delete</button>`;
+                        todoList.appendChild(li);
+                    }
+                });
+            } catch (error) {
+                console.log(error);
+            }
+
+
+        }
+
+        async function init() {
+            await fetchTodos();
+        }
+
+        init();
+
+    </script>
+</body>
+
+</html>
